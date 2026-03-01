@@ -1,44 +1,59 @@
 import { useEffect } from 'react';
+import { View } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { PaperProvider, MD3LightTheme } from 'react-native-paper';
+import { PaperProvider, MD3LightTheme, MD3DarkTheme } from 'react-native-paper';
 import * as SplashScreen from 'expo-splash-screen';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useThemeStore } from '@/store/useThemeStore';
+import { FloatingNav } from '@/components/FloatingNav';
 
 SplashScreen.preventAutoHideAsync();
 
 const queryClient = new QueryClient({
-    defaultOptions: {
-        queries: { staleTime: 30_000, retry: 1 },
-    },
+    defaultOptions: { queries: { staleTime: 30_000, retry: 1 } },
 });
 
-const theme = {
+const lightTheme = {
     ...MD3LightTheme,
     colors: {
         ...MD3LightTheme.colors,
-        primary: '#059669',       // emerald-600
+        primary: '#059669',
         primaryContainer: '#d1fae5',
         secondary: '#0d9488',
         background: '#f8fafc',
         surface: '#ffffff',
+        onSurface: '#111827',
+        outline: '#d1d5db',
+    },
+};
+
+const darkTheme = {
+    ...MD3DarkTheme,
+    colors: {
+        ...MD3DarkTheme.colors,
+        primary: '#10b981',
+        primaryContainer: '#064e3b',
+        secondary: '#14b8a6',
+        background: '#0f172a',
+        surface: '#1e293b',
+        onSurface: '#f1f5f9',
+        outline: '#334155',
     },
 };
 
 function AuthGate({ children }: { children: React.ReactNode }) {
     const { token, isLoaded, init } = useAuthStore();
+    const { load: loadTheme } = useThemeStore();
     const segments = useSegments();
     const router = useRouter();
 
-    useEffect(() => {
-        init();
-    }, [init]);
+    useEffect(() => { init(); loadTheme(); }, [init, loadTheme]);
 
     useEffect(() => {
         if (!isLoaded) return;
         SplashScreen.hideAsync();
-
         const inAuth = segments[0] === '(auth)';
         if (!token && !inAuth) {
             router.replace('/(auth)/login');
@@ -47,14 +62,21 @@ function AuthGate({ children }: { children: React.ReactNode }) {
         }
     }, [token, isLoaded, segments]);
 
-    return <>{children}</>;
+    return (
+        <View style={{ flex: 1 }}>
+            {children}
+            <FloatingNav />
+        </View>
+    );
 }
 
 export default function RootLayout() {
+    const isDark = useThemeStore(s => s.isDark);
+
     return (
         <GestureHandlerRootView style={{ flex: 1 }}>
             <QueryClientProvider client={queryClient}>
-                <PaperProvider theme={theme}>
+                <PaperProvider theme={isDark ? darkTheme : lightTheme}>
                     <AuthGate>
                         <Stack screenOptions={{ headerShown: false }}>
                             <Stack.Screen name="(auth)" />

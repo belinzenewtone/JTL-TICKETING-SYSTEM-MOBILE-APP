@@ -1,24 +1,15 @@
 import { Tabs } from 'expo-router';
 import { Ticket, CheckSquare, Grid, User } from 'lucide-react-native';
+import { useColors } from '@/hooks/useColors';
 
-// Logout now lives in the Profile tab — no header button needed
 export default function AdminLayout() {
+    const C = useColors();
     return (
         <Tabs
             screenOptions={{
-                tabBarActiveTintColor: '#059669',
-                tabBarInactiveTintColor: '#9ca3af',
-                tabBarStyle: {
-                    backgroundColor: '#ffffff',
-                    borderTopColor: '#f3f4f6',
-                    elevation: 8,
-                    shadowColor: '#000',
-                    shadowOffset: { width: 0, height: -2 },
-                    shadowOpacity: 0.06,
-                    shadowRadius: 8,
-                    height: 60,
-                    paddingBottom: 8,
-                },
+                tabBarActiveTintColor: C.tabActive,
+                tabBarInactiveTintColor: C.tabInactive,
+                tabBarStyle: { display: 'none' },
                 headerShown: false,
             }}
         >

@@ -2,26 +2,42 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
-import { ArrowLeft, Ticket, CheckSquare, Monitor, TrendingUp } from 'lucide-react-native';
+import { ArrowLeft, Ticket, CheckSquare, Monitor, Mail, TrendingUp, CheckCircle, Clock } from 'lucide-react-native';
 import { dashboardApi } from '@/api/client';
+import { useColors } from '@/hooks/useColors';
 
 function MetricRow({ label, value, total, color }: { label: string; value: number; total: number; color: string }) {
+    const C = useColors();
     const pct = total > 0 ? Math.round((value / total) * 100) : 0;
     return (
         <View style={styles.metricRow}>
             <View style={styles.metricLabel}>
-                <Text style={styles.metricName}>{label}</Text>
-                <Text style={styles.metricCount}>{value}</Text>
+                <Text style={[styles.metricName, { color: C.textSub }]}>{label}</Text>
+                <Text style={[styles.metricCount, { color: C.text }]}>{value}</Text>
             </View>
-            <View style={styles.barTrack}>
+            <View style={[styles.barTrack, { backgroundColor: C.surfaceHigh }]}>
                 <View style={[styles.barFill, { width: `${pct}%`, backgroundColor: color }]} />
             </View>
         </View>
     );
 }
 
+function StatCard({ label, value, icon: Icon, color, bgColor }: any) {
+    const C = useColors();
+    return (
+        <View style={[styles.bigStat, { backgroundColor: C.surface, shadowColor: '#000' }]}>
+            <View style={[styles.iconWrap, { backgroundColor: bgColor }]}>
+                <Icon size={18} color={color} />
+            </View>
+            <Text style={[styles.bigNum, { color: C.text }]}>{value}</Text>
+            <Text style={[styles.bigLabel, { color: C.textMuted }]}>{label}</Text>
+        </View>
+    );
+}
+
 export default function DashboardScreen() {
     const router = useRouter();
+    const C = useColors();
     const { data: stats, isLoading } = useQuery({
         queryKey: ['dashboard'],
         queryFn: () => dashboardApi.stats().then(r => r.data as any),
@@ -29,78 +45,68 @@ export default function DashboardScreen() {
     });
 
     return (
-        <SafeAreaView style={styles.root} edges={['top']}>
+        <SafeAreaView style={[styles.root, { backgroundColor: C.bg }]} edges={['top']}>
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-                    <ArrowLeft size={22} color="#111827" />
+                    <ArrowLeft size={22} color={C.text} />
                 </TouchableOpacity>
-                <Text style={styles.title}>Dashboard</Text>
+                <Text style={[styles.title, { color: C.text }]}>Dashboard</Text>
             </View>
 
             {isLoading || !stats ? (
-                <View style={styles.loading}><Text style={styles.loadingText}>Loading stats…</Text></View>
+                <View style={styles.loading}><Text style={[styles.loadingText, { color: C.textMuted }]}>Loading stats…</Text></View>
             ) : (
-                <ScrollView contentContainerStyle={styles.scroll}>
+                <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+
+                    {/* Email Entries (New Section from Web App) */}
+                    <View style={styles.section}>
+                        <View style={styles.sectionHeader}>
+                            <Mail size={18} color={C.primary} />
+                            <Text style={[styles.sectionTitle, { color: C.text }]}>Email Dashboard</Text>
+                        </View>
+                        <View style={styles.bigStatRow}>
+                            <StatCard label="Total" value={stats.entries?.total || 0} icon={Mail} color="#10b981" bgColor="rgba(16, 185, 129, 0.1)" />
+                            <StatCard label="Sorted" value={stats.entries?.sorted || 0} icon={CheckCircle} color="#06b6d4" bgColor="rgba(6, 182, 212, 0.1)" />
+                            <StatCard label="Pending" value={stats.entries?.pending || 0} icon={Clock} color="#f59e0b" bgColor="rgba(245, 158, 11, 0.1)" />
+                        </View>
+                    </View>
 
                     {/* Tickets */}
                     <View style={styles.section}>
                         <View style={styles.sectionHeader}>
-                            <Ticket size={18} color="#059669" />
-                            <Text style={styles.sectionTitle}>Tickets</Text>
+                            <Ticket size={18} color="#8b5cf6" />
+                            <Text style={[styles.sectionTitle, { color: C.text }]}>Ticketing System</Text>
                         </View>
                         <View style={styles.bigStatRow}>
-                            <View style={styles.bigStat}><Text style={[styles.bigNum, { color: '#111827' }]}>{stats.tickets.total}</Text><Text style={styles.bigLabel}>Total</Text></View>
-                            <View style={styles.bigStat}><Text style={[styles.bigNum, { color: '#1d4ed8' }]}>{stats.tickets.open}</Text><Text style={styles.bigLabel}>Open</Text></View>
-                            <View style={styles.bigStat}><Text style={[styles.bigNum, { color: '#b45309' }]}>{stats.tickets.in_progress}</Text><Text style={styles.bigLabel}>In Progress</Text></View>
-                            <View style={styles.bigStat}><Text style={[styles.bigNum, { color: '#059669' }]}>{stats.tickets.resolved}</Text><Text style={styles.bigLabel}>Resolved</Text></View>
+                            <StatCard label="Total" value={stats.tickets.total} icon={Ticket} color="#8b5cf6" bgColor="rgba(139, 92, 246, 0.1)" />
+                            <StatCard label="Open" value={stats.tickets.open} icon={TrendingUp} color="#3b82f6" bgColor="rgba(59, 130, 246, 0.1)" />
+                            <StatCard label="Resolved" value={stats.tickets.resolved} icon={CheckCircle} color="#10b981" bgColor="rgba(16, 185, 129, 0.1)" />
                         </View>
-                        <View style={styles.card}>
+                        <View style={[styles.card, { backgroundColor: C.surface, shadowColor: '#000' }]}>
                             <MetricRow label="Open" value={stats.tickets.open} total={stats.tickets.total} color="#3b82f6" />
                             <MetricRow label="In Progress" value={stats.tickets.in_progress} total={stats.tickets.total} color="#f59e0b" />
                             <MetricRow label="Resolved" value={stats.tickets.resolved} total={stats.tickets.total} color="#10b981" />
                             <MetricRow label="Closed" value={stats.tickets.closed} total={stats.tickets.total} color="#6b7280" />
                         </View>
-                        <View style={styles.row}>
-                            <View style={[styles.highlightCard, { borderColor: '#fee2e2' }]}>
-                                <Text style={[styles.highlightNum, { color: '#dc2626' }]}>{stats.tickets.critical}</Text>
-                                <Text style={styles.highlightLabel}>Critical</Text>
-                            </View>
-                            <View style={[styles.highlightCard, { borderColor: '#d1fae5' }]}>
-                                <Text style={[styles.highlightNum, { color: '#059669' }]}>{stats.tickets.today}</Text>
-                                <Text style={styles.highlightLabel}>Today</Text>
-                            </View>
-                            <View style={[styles.highlightCard, { borderColor: '#dbeafe' }]}>
-                                <Text style={[styles.highlightNum, { color: '#1d4ed8' }]}>{stats.tickets.this_week}</Text>
-                                <Text style={styles.highlightLabel}>This Week</Text>
-                            </View>
-                        </View>
                     </View>
 
-                    {/* Tasks */}
-                    <View style={styles.section}>
-                        <View style={styles.sectionHeader}>
-                            <CheckSquare size={18} color="#b45309" />
-                            <Text style={styles.sectionTitle}>Tasks</Text>
+                    {/* Tasks & Machines */}
+                    <View style={styles.row}>
+                        <View style={[styles.halfSection, { backgroundColor: C.surface, shadowColor: '#000' }]}>
+                            <View style={styles.sectionHeader}>
+                                <CheckSquare size={16} color="#f59e0b" />
+                                <Text style={[styles.subTitle, { color: C.text }]}>Tasks</Text>
+                            </View>
+                            <Text style={[styles.halfNum, { color: C.text }]}>{stats.tasks.total}</Text>
+                            <Text style={[styles.halfLabel, { color: C.textMuted }]}>{stats.tasks.pending} pending</Text>
                         </View>
-                        <View style={styles.bigStatRow}>
-                            <View style={styles.bigStat}><Text style={[styles.bigNum, { color: '#111827' }]}>{stats.tasks.total}</Text><Text style={styles.bigLabel}>Total</Text></View>
-                            <View style={styles.bigStat}><Text style={[styles.bigNum, { color: '#059669' }]}>{stats.tasks.completed}</Text><Text style={styles.bigLabel}>Done</Text></View>
-                            <View style={styles.bigStat}><Text style={[styles.bigNum, { color: '#b45309' }]}>{stats.tasks.pending}</Text><Text style={styles.bigLabel}>Pending</Text></View>
-                            <View style={styles.bigStat}><Text style={[styles.bigNum, { color: '#dc2626' }]}>{stats.tasks.urgent}</Text><Text style={styles.bigLabel}>Urgent</Text></View>
-                        </View>
-                    </View>
-
-                    {/* Machines */}
-                    <View style={styles.section}>
-                        <View style={styles.sectionHeader}>
-                            <Monitor size={18} color="#0284c7" />
-                            <Text style={styles.sectionTitle}>Machine Requests</Text>
-                        </View>
-                        <View style={styles.bigStatRow}>
-                            <View style={styles.bigStat}><Text style={[styles.bigNum, { color: '#111827' }]}>{stats.machines.total}</Text><Text style={styles.bigLabel}>Total</Text></View>
-                            <View style={styles.bigStat}><Text style={[styles.bigNum, { color: '#b45309' }]}>{stats.machines.pending}</Text><Text style={styles.bigLabel}>Pending</Text></View>
-                            <View style={styles.bigStat}><Text style={[styles.bigNum, { color: '#059669' }]}>{stats.machines.approved}</Text><Text style={styles.bigLabel}>Approved</Text></View>
-                            <View style={styles.bigStat}><Text style={[styles.bigNum, { color: '#6b7280' }]}>{stats.machines.fulfilled}</Text><Text style={styles.bigLabel}>Fulfilled</Text></View>
+                        <View style={[styles.halfSection, { backgroundColor: C.surface, shadowColor: '#000' }]}>
+                            <View style={styles.sectionHeader}>
+                                <Monitor size={16} color="#06b6d4" />
+                                <Text style={[styles.subTitle, { color: C.text }]}>Machines</Text>
+                            </View>
+                            <Text style={[styles.halfNum, { color: C.text }]}>{stats.machines.total}</Text>
+                            <Text style={[styles.halfLabel, { color: C.textMuted }]}>{stats.machines.pending} requests</Text>
                         </View>
                     </View>
 
@@ -111,29 +117,31 @@ export default function DashboardScreen() {
 }
 
 const styles = StyleSheet.create({
-    root: { flex: 1, backgroundColor: '#f8fafc' },
+    root: { flex: 1 },
     header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12 },
     backBtn: { padding: 4, marginRight: 10 },
-    title: { fontSize: 20, fontWeight: '700', color: '#111827' },
+    title: { fontSize: 22, fontWeight: '800' },
     loading: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-    loadingText: { color: '#9ca3af' },
-    scroll: { padding: 16, paddingTop: 4, paddingBottom: 32 },
-    section: { marginBottom: 20 },
-    sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 },
-    sectionTitle: { fontSize: 16, fontWeight: '700', color: '#111827' },
-    bigStatRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
-    bigStat: { flex: 1, backgroundColor: '#fff', borderRadius: 12, padding: 12, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2, elevation: 1 },
-    bigNum: { fontSize: 22, fontWeight: '800' },
-    bigLabel: { fontSize: 11, color: '#9ca3af', marginTop: 2 },
-    card: { backgroundColor: '#fff', borderRadius: 14, padding: 16, marginBottom: 10, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 3, elevation: 1 },
-    metricRow: { marginBottom: 12 },
-    metricLabel: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
-    metricName: { fontSize: 13, color: '#374151' },
-    metricCount: { fontSize: 13, fontWeight: '600', color: '#111827' },
-    barTrack: { height: 6, backgroundColor: '#f3f4f6', borderRadius: 3, overflow: 'hidden' },
-    barFill: { height: '100%', borderRadius: 3 },
-    row: { flexDirection: 'row', gap: 10 },
-    highlightCard: { flex: 1, backgroundColor: '#fff', borderRadius: 12, padding: 12, alignItems: 'center', borderWidth: 1, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 2, elevation: 1 },
-    highlightNum: { fontSize: 20, fontWeight: '800', marginBottom: 2 },
-    highlightLabel: { fontSize: 11, color: '#9ca3af' },
+    loadingText: { fontSize: 15 },
+    scroll: { padding: 16, paddingTop: 4, paddingBottom: 120 },
+    section: { marginBottom: 24 },
+    sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 14 },
+    sectionTitle: { fontSize: 17, fontWeight: '700' },
+    subTitle: { fontSize: 15, fontWeight: '600' },
+    bigStatRow: { flexDirection: 'row', gap: 10, marginBottom: 12 },
+    bigStat: { flex: 1, borderRadius: 16, padding: 16, alignItems: 'center', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 4, elevation: 2 },
+    iconWrap: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
+    bigNum: { fontSize: 24, fontWeight: '800' },
+    bigLabel: { fontSize: 11, fontWeight: '600', marginTop: 2, textTransform: 'uppercase' },
+    card: { borderRadius: 18, padding: 18, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 5, elevation: 2 },
+    metricRow: { marginBottom: 14 },
+    metricLabel: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
+    metricName: { fontSize: 13, fontWeight: '500' },
+    metricCount: { fontSize: 13, fontWeight: '700' },
+    barTrack: { height: 8, borderRadius: 4, overflow: 'hidden' },
+    barFill: { height: '100%', borderRadius: 4 },
+    row: { flexDirection: 'row', gap: 12 },
+    halfSection: { flex: 1, borderRadius: 18, padding: 16, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 4, elevation: 2 },
+    halfNum: { fontSize: 24, fontWeight: '800', marginVertical: 4 },
+    halfLabel: { fontSize: 12, fontWeight: '500' },
 });

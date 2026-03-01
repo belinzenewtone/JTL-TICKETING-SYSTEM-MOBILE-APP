@@ -94,3 +94,9 @@ export const machinesApi = {
 export const dashboardApi = {
     stats: () => api.get('/dashboard'),
 };
+
+// ── Profile ───────────────────────────────────────────────────────────────────
+export const profileApi = {
+    update: (data: { name: string }) =>
+        api.patch<{ id: string; email: string; name: string; role: string }>('/me', data),
+};
